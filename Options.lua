@@ -3,7 +3,7 @@
 -- @Link   : https://dengsir.github.io
 -- @Date   : 4/15/2024, 11:37:25 PM
 --
-local MAJOR, MINOR = 'tdOptions', 2
+local MAJOR, MINOR = 'tdOptions', 3
 ---@class tdOptions
 local Lib, oldminor = LibStub:NewLibrary(MAJOR, MINOR)
 
@@ -126,7 +126,7 @@ function Lib:Open(name, ...)
     self.TreeGroup:SelectByValue(name)
 end
 
-if oldminor < 2 then
+if oldminor and oldminor < 2 then
     if Lib.TreeGroup then
         if next(Lib.TreeGroup.buttons) then
             for _, button in ipairs(Lib.TreeGroup.buttons) do
