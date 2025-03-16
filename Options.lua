@@ -3,7 +3,7 @@
 -- @Link   : https://dengsir.github.io
 -- @Date   : 4/15/2024, 11:37:25 PM
 --
-local MAJOR, MINOR = 'tdOptions', 3
+local MAJOR, MINOR = 'tdOptions', 4
 ---@class tdOptions
 local Lib, oldminor = LibStub:NewLibrary(MAJOR, MINOR)
 
@@ -44,7 +44,7 @@ end
 function Lib:GeneratePanel(name, item)
     item = item or {}
     item.value = name
-    item.text = '  ' .. C_AddOns.GetAddOnMetadata(name, 'Title')
+    item.text = name
     return item
 end
 
@@ -78,6 +78,12 @@ function Lib:Open(name, ...)
             self.Version:SetText(format('Version: %s', C_AddOns.GetAddOnMetadata(group, 'Version')))
             AceConfigDialog:Open(group, self.InlineGroup)
         end)
+        TreeGroup:SetCallback('OnButtonEnter', function(_, _, uv, button)
+            GameTooltip:SetOwner(button, 'ANCHOR_RIGHT')
+            GameTooltip:SetText(C_AddOns.GetAddOnMetadata(button.value, 'Title'))
+            GameTooltip:Show()
+        end)
+        TreeGroup:SetCallback('OnButtonLeave', GameTooltip_Hide)
 
         Frame:AddChild(TreeGroup)
 
@@ -107,6 +113,7 @@ function Lib:Open(name, ...)
         ParentGroup:AddChild(Heading)
 
         local InlineGroup = AceGUI:Create('SimpleGroup')
+        InlineGroup.type = 'SimpleGroupHooked' -- hack: SimpleGroup不会创建ScrollFrame
         InlineGroup:SetLayout('Fill')
         InlineGroup:SetFullWidth(true)
         InlineGroup:SetFullHeight(true)
@@ -144,6 +151,11 @@ if oldminor and oldminor < 2 then
     Lib.Frame.frame:SetClampedToScreen(false)
     Lib.Frame:Release()
     Lib.Frame = nil
+
+end
+
+if oldminor and oldminor <= 3 then
+    wipe(Lib.addons)
 
     for _, v in ipairs(Lib.panels) do
         tinsert(Lib.addons, v.value)
