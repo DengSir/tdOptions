@@ -11,8 +11,13 @@ if not Lib then
     return
 end
 
-Lib.panels = Lib.panels or {}
-Lib.addons = Lib.addons or {}
+local panels = Lib.panels or {}
+local data = Lib.data or {}
+
+wipe(Lib)
+
+Lib.panels = panels
+Lib.data = data
 
 local AceGUI = LibStub('AceGUI-3.0')
 local AceConfigRegistry = LibStub('AceConfigRegistry-3.0')
@@ -26,26 +31,41 @@ local C_AddOns = _G.C_AddOns
 
 local STANDARD_TEXT_FONT = _G.STANDARD_TEXT_FONT
 
-function Lib:Register(name, opts)
-    AceConfigRegistry:RegisterOptionsTable(name, opts)
-    AceConfigDialog:AddToBlizOptions(name, name)
-    self:UpdateAddon(name)
+local function UpdateAddon(name)
+    if select(5, GetAddOnInfo(name)) ~= 'MISSING' then
+        data[name] = {
+            text = C_AddOns.GetAddOnMetadata(name, 'Title'),
+            icon = C_AddOns.GetAddOnMetadata(name, 'IconTexture'),
+            version = C_AddOns.GetAddOnMetadata(name, 'Version'),
+        }
+    end
 end
 
-function Lib:UpdateAddon(name)
-    table.insert(self.addons, name)
-    table.insert(self.panels, self:GeneratePanel(name))
-end
-
-function Lib:Update()
-    self.TreeGroup:RefreshTree()
-end
-
-function Lib:GeneratePanel(name, item)
+local function GeneratePanel(name, item)
     item = item or {}
     item.value = name
     item.text = name
     return item
+end
+
+local function AddPanel(name)
+    table.insert(panels, GeneratePanel(name))
+    sort(panels, function(a, b)
+        if a.value == 'tdSupport' then
+            return false
+        end
+        if b.value == 'tdSupport' then
+            return true
+        end
+        return a.text < b.text
+    end)
+end
+
+function Lib:Register(name, opts)
+    AceConfigRegistry:RegisterOptionsTable(name, opts)
+    AceConfigDialog:AddToBlizOptions(name, name)
+    UpdateAddon(name)
+    AddPanel(name)
 end
 
 function Lib:Open(name, ...)
@@ -73,14 +93,15 @@ function Lib:Open(name, ...)
         TreeGroup:SetTreeWidth(false)
         TreeGroup:SetTree(self.panels)
         TreeGroup:SetCallback('OnGroupSelected', function(_, _, group)
-            self.Label:SetText(C_AddOns.GetAddOnMetadata(group, 'Title'))
-            self.Label:SetImage(C_AddOns.GetAddOnMetadata(group, 'IconTexture'))
-            self.Version:SetText(format('Version: %s', C_AddOns.GetAddOnMetadata(group, 'Version')))
+            local addonData = self.data[group]
+            self.Label:SetText(addonData.text)
+            self.Label:SetImage(addonData.icon)
+            self.Version:SetText(addonData.version and format('Version: %s', addonData.version) or '')
             AceConfigDialog:Open(group, self.InlineGroup)
         end)
         TreeGroup:SetCallback('OnButtonEnter', function(_, _, uv, button)
             GameTooltip:SetOwner(button, 'ANCHOR_RIGHT')
-            GameTooltip:SetText(C_AddOns.GetAddOnMetadata(button.value, 'Title'))
+            GameTooltip:SetText(self.data.text)
             GameTooltip:Show()
         end)
         TreeGroup:SetCallback('OnButtonLeave', GameTooltip_Hide)
@@ -129,7 +150,7 @@ function Lib:Open(name, ...)
 
     AceConfigDialog:SelectGroup(name, ...)
     self.Frame:Show()
-    self:Update()
+    self.TreeGroup:RefreshTree()
     self.TreeGroup:SelectByValue(name)
 end
 
@@ -151,14 +172,37 @@ if oldminor and oldminor < 2 then
     Lib.Frame.frame:SetClampedToScreen(false)
     Lib.Frame:Release()
     Lib.Frame = nil
-
 end
 
 if oldminor and oldminor <= 3 then
-    wipe(Lib.addons)
-
     for _, v in ipairs(Lib.panels) do
-        tinsert(Lib.addons, v.value)
-        Lib:GeneratePanel(v.value, v)
+        GeneratePanel(v.value, v)
+        UpdateAddon(v.value)
     end
+end
+
+do
+    local _L = GetLocale()
+    local L = _L == 'zhCN' and { --
+        tdSupport = '支持作者',
+    } or { --
+        tdSupport = 'Support Author',
+    }
+
+    local Addon = 'tdSupport'
+
+    data[Addon] = { --
+        text = L['tdSupport'],
+        icon = [[Interface\ICONS\Achievement_Reputation_08]],
+    }
+
+    local opts = { --
+        type = 'group',
+        name = L['tdSupport'],
+        args = {desc = {type = 'description', name = [[]], order = 1}},
+    }
+
+    AceConfigRegistry:RegisterOptionsTable(Addon, opts)
+
+    tinsert(panels, {text = L['tdSupport'], value = Addon})
 end
