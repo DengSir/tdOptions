@@ -3,7 +3,7 @@
 -- @Link   : https://dengsir.github.io
 -- @Date   : 4/15/2024, 11:37:25 PM
 --
-local MAJOR, MINOR = 'tdOptions', 4
+local MAJOR, MINOR = 'tdOptions', 5
 ---@class tdOptions
 local Lib, oldminor = LibStub:NewLibrary(MAJOR, MINOR)
 
@@ -36,6 +36,7 @@ local function UpdateAddon(name)
         data[name] = {
             text = C_AddOns.GetAddOnMetadata(name, 'Title'),
             icon = C_AddOns.GetAddOnMetadata(name, 'IconTexture'),
+            notes = C_AddOns.GetAddOnMetadata(name, 'Notes'),
             version = C_AddOns.GetAddOnMetadata(name, 'Version'),
         }
     end
@@ -99,9 +100,16 @@ function Lib:Open(name, ...)
             self.Version:SetText(addonData.version and format('Version: %s', addonData.version) or '')
             AceConfigDialog:Open(group, self.InlineGroup)
         end)
-        TreeGroup:SetCallback('OnButtonEnter', function(_, _, uv, button)
+        TreeGroup:SetCallback('OnButtonEnter', function(_, _, group, button)
+            local addonData = self.data[group]
+            if not addonData then
+                return
+            end
             GameTooltip:SetOwner(button, 'ANCHOR_RIGHT')
-            GameTooltip:SetText(self.data.text)
+            GameTooltip:SetText(addonData.text)
+            if addonData.notes then
+                GameTooltip:AddLine(addonData.notes, 1, 1, 1, true)
+            end
             GameTooltip:Show()
         end)
         TreeGroup:SetCallback('OnButtonLeave', GameTooltip_Hide)
