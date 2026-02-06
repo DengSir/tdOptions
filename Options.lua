@@ -3,10 +3,10 @@
 -- @Link   : https://dengsir.github.io
 -- @Date   : 4/15/2024, 11:37:25 PM
 --
-local MAJOR, MINOR = 'tdOptions', 7
+local MAJOR, MINOR = 'tdOptions', 8
+
 ---@class tdOptions
 local Lib, oldminor = LibStub:NewLibrary(MAJOR, MINOR)
-
 if not Lib then
     return
 end
@@ -189,7 +189,15 @@ if oldminor and oldminor <= 3 then
     end
 end
 
-do
+if oldminor <= 7 then
+    local Addon = 'tdSupport'
+
+    for i, v in ipairs_reverse(panels) do
+        if v.value == Addon then
+            tremove(panels, i)
+        end
+    end
+
     local _L = GetLocale()
     local L = _L == 'zhCN' and { --
         tdSupport = '支持作者',
@@ -200,8 +208,6 @@ do
         Afadian = 'Afadian',
         ['Use CTRL+C to copy link'] = 'Use CTRL+C to copy link',
     }
-
-    local Addon = 'tdSupport'
 
     data[Addon] = { --
         text = L['tdSupport'],
